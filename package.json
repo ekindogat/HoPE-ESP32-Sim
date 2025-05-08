@@ -1,0 +1,9 @@
+{
+    "scripts": {
+        "start": "node-red"
+    },
+    "dependencies": {
+        "node-red": "^4.0.9",
+        "node-red-dashboard": "^3.6.5"
+    }
+}

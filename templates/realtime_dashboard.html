@@ -12,11 +12,11 @@
             const value = data[key];
             const element = document.getElementById(key);
             element.innerText = value ?? "N/A";
-            if (key === "temperature") {
+            if (key === "temp") {
               element.style.backgroundColor = value >= 15 && value <= 30 ? "green" : "red";
             } else if (key === "humidity") {
               element.style.backgroundColor = value >= 30 && value <= 50 ? "green" : "red";
-            } else if (key === "light") {
+            } else if (key === "light_intensity") {
               element.style.backgroundColor = value >= 20000 && value <= 30000 ? "green" : "red";
             }
           }
@@ -30,9 +30,9 @@
 <body>
   <h1>Lavender Environment Monitor</h1>
   <div class="container">
-    <div class="section" id="temperature">Loading...</div>
+    <div class="section" id="temp">Loading...</div>
     <div class="section" id="humidity">Loading...</div>
-    <div class="section" id="light">Loading...</div>
+    <div class="section" id="light_intensity">Loading...</div>
   </div>
 </body>
 </html>

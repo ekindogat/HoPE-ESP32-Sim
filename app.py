@@ -1,7 +1,7 @@
 from flask import Flask, render_template, jsonify
 from mqtt_client import start_mqtt, sensor_data
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder='css', template_folder='templates')
 start_mqtt()
 
 @app.route("/")

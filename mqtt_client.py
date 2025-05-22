@@ -12,6 +12,8 @@ def on_message(client, userdata, msg):
         # payload format: {"temp": val, "humidity": val, "light_intensity": val}
         import json
         data = json.loads(msg.payload.decode())
+        # debug
+        print(data)
         sensor_data.update(data)
     except Exception as e:
         print("Failed to parse message:", e)

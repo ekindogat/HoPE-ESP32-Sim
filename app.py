@@ -1,7 +1,15 @@
-from flask import Flask, render_template, jsonify
+from flask import Flask, render_template, jsonify, send_from_directory
 from mqtt_client import start_mqtt, sensor_data
+import os
 
-app = Flask(__name__, static_folder='css', template_folder='templates')
+app = Flask(__name__, 
+    static_folder='static',
+    template_folder='templates')
+
+# Create static folder structure
+os.makedirs('static/css', exist_ok=True)
+os.makedirs('static/icon', exist_ok=True)
+
 start_mqtt()
 
 @app.route("/")
@@ -11,6 +19,10 @@ def dashboard():
 @app.route("/data")
 def data():
     return jsonify(sensor_data)
+
+@app.route('/static/<path:filename>')
+def serve_static(filename):
+    return send_from_directory('static', filename)
 
 if __name__ == "__main__":
     app.run(debug=True)

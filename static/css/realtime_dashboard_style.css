@@ -6,20 +6,29 @@
 
 body {
   font-family: 'Roboto', sans-serif;
-  background-color: #f5f7fa;
+  background-color: rgba(245, 247, 250, 1);
   color: #2d3748;
   line-height: 1.6;
+  background-image: url('/static/icon/hope-logo-small.png');
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 1200px;
+  background-blend-mode: overlay;
+  background-color: rgba(245, 247, 250, 0.97);
+  min-height: 100vh;
 }
 
 .dashboard {
   max-width: 1200px;
   margin: 0 auto;
   padding: 2rem;
+  position: relative;
 }
 
 header {
   text-align: center;
   margin-bottom: 3rem;
+  margin-top: 1rem;
 }
 
 header h1 {
@@ -194,6 +203,10 @@ header h1 i {
 
 /* Responsive Design */
 @media (max-width: 768px) {
+  body {
+    background-size: 200px;
+  }
+
   .dashboard {
     padding: 1rem;
   }
@@ -212,6 +225,10 @@ header h1 i {
 
   .card-value {
     font-size: 2rem;
+  }
+
+  header {
+    margin-top: 0.5rem;
   }
 }
 
@@ -354,4 +371,10 @@ header h1 i {
 
 .sensor-card.critical {
     animation: pulse 2s infinite;
+}
+
+/* Remove logo button styles */
+.logo-button,
+.logo-image {
+  display: none;
 }

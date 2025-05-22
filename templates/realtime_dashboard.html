@@ -1,38 +1,314 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>HoPE - Lavender Monitoring</title>
-  <link rel="stylesheet" href="/css/realtime_dashboard_style.css">
-  <script>
-    function fetchData() {
-      fetch('/data')
-        .then(res => res.json())
-        .then(data => {
-          for (const key in data) {
-            const value = data[key];
-            const element = document.getElementById(key);
-            element.innerText = value ?? "N/A";
-            if (key === "temp") {
-              element.style.backgroundColor = value >= 15 && value <= 30 ? "green" : "red";
-            } else if (key === "humidity") {
-              element.style.backgroundColor = value >= 30 && value <= 50 ? "green" : "red";
-            } else if (key === "light_intensity") {
-              element.style.backgroundColor = value >= 20000 && value <= 30000 ? "green" : "red";
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HoPE - Lavender Monitoring</title>
+    <link rel="stylesheet" href="/css/realtime_dashboard_style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script>
+        function updateStatus(value, type) {
+            let status = 'normal';
+            let icon = 'fa-check-circle';
+            let message = '';
+            
+            if (type === 'temp') {
+                if (value < 5 || value > 40) {  // Critical range
+                    status = 'critical';
+                    icon = 'fa-exclamation-triangle';
+                    message = value < 5 ? 'Temperature too low!' : 'Temperature too high!';
+                } else if (value < 10 || value > 35) {  // Warning range
+                    status = 'warning';
+                    icon = 'fa-exclamation-circle';
+                    message = value < 10 ? 'Temperature getting low' : 'Temperature getting high';
+                }
+            } else if (type === 'humidity') {
+                if (value < 15 || value > 80) {  // Critical range
+                    status = 'critical';
+                    icon = 'fa-exclamation-triangle';
+                    message = value < 15 ? 'Humidity too low!' : 'Humidity too high!';
+                } else if (value < 20 || value > 70) {  // Warning range
+                    status = 'warning';
+                    icon = 'fa-exclamation-circle';
+                    message = value < 20 ? 'Humidity getting low' : 'Humidity getting high';
+                }
+            } else if (type === 'light_intensity') {
+                if (value < 5000 || value > 45000) {  // Critical range
+                    status = 'critical';
+                    icon = 'fa-exclamation-triangle';
+                    message = value < 5000 ? 'Light intensity too low!' : 'Light intensity too high!';
+                } else if (value < 10000 || value > 40000) {  // Warning range
+                    status = 'warning';
+                    icon = 'fa-exclamation-circle';
+                    message = value < 10000 ? 'Light intensity getting low' : 'Light intensity getting high';
+                }
             }
-          }
-        });
-    }
+            
+            return { status, icon, message };
+        }
 
-    setInterval(fetchData, 2000); // update every 2 seconds
-    window.onload = fetchData;
-  </script>
+        function formatValue(value, type) {
+            if (type === 'temp') return `${value}°C`;
+            if (type === 'humidity') return `${value}%`;
+            if (type === 'light_intensity') return `${(value/1000).toFixed(1)}k lux`;
+            return value;
+        }
+
+        function showAlert(message, type) {
+            // Check if alert already exists
+            let alertBox = document.getElementById('alert-box');
+            if (!alertBox) {
+                alertBox = document.createElement('div');
+                alertBox.id = 'alert-box';
+                document.body.appendChild(alertBox);
+            }
+            
+            // Create new alert
+            const alert = document.createElement('div');
+            alert.className = `alert ${type}`;
+            alert.innerHTML = `
+                <i class="fas ${type === 'critical' ? 'fa-exclamation-triangle' : 'fa-exclamation-circle'}"></i>
+                <span>${message}</span>
+                <button onclick="this.parentElement.remove()">×</button>
+            `;
+            
+            // Add to alert box
+            alertBox.appendChild(alert);
+            
+            // Remove alert after 5 seconds if it's a warning
+            if (type === 'warning') {
+                setTimeout(() => alert.remove(), 5000);
+            }
+        }
+
+        function clearAlerts() {
+            const alertBox = document.getElementById('alert-box');
+            if (alertBox) {
+                // Remove all alerts except critical ones
+                const alerts = alertBox.querySelectorAll('.alert:not(.critical)');
+                alerts.forEach(alert => alert.remove());
+            }
+        }
+
+        function clearAllAlerts() {
+            const alertBox = document.getElementById('alert-box');
+            if (alertBox) {
+                alertBox.innerHTML = ''; // Remove all alerts
+            }
+        }
+
+        let lastUpdateTime = {};
+        let lastMessageTimestamp = null;
+        let retryCount = 0;
+        const MAX_RETRIES = 5;
+        const RETRY_DELAY = 2000;
+        const UPDATE_INTERVAL = 2000;
+        let connectionLost = false;
+
+        function updateLastUpdateTime(key, timestamp) {
+            lastUpdateTime[key] = {
+                timestamp: timestamp,
+                lastUpdate: Date.now()
+            };
+        }
+
+        function updateConnectionStatus(isConnected, message = '') {
+            const connectionStatus = document.getElementById('connection-status');
+            if (connectionStatus) {
+                if (isConnected) {
+                    connectionStatus.className = 'connection-status connected';
+                    connectionStatus.innerHTML = '<i class="fas fa-wifi"></i> Connected';
+                    if (connectionLost) {
+                        showAlert('Connection restored', 'normal');
+                        connectionLost = false;
+                    }
+                } else {
+                    connectionStatus.className = 'connection-status disconnected';
+                    connectionStatus.innerHTML = `<i class="fas fa-wifi-slash"></i> ${message || 'Disconnected'}`;
+                    if (!connectionLost) {
+                        showAlert('Connection lost. Attempting to reconnect...', 'warning');
+                        connectionLost = true;
+                    }
+                }
+            }
+        }
+
+        async function fetchData() {
+            try {
+                const response = await fetch('/data');
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const data = await response.json();
+                
+                // Check if this is a new message
+                if (data.timestamp === lastMessageTimestamp) {
+                    // Same message, don't update UI
+                    setTimeout(fetchData, UPDATE_INTERVAL);
+                    return;
+                }
+                
+                lastMessageTimestamp = data.timestamp;
+                console.log('Received new data:', data);
+
+                // Clear previous alerts when new data arrives
+                clearAlerts();
+
+                let hasNewData = false;
+                let hasCriticalState = false;
+                for (const key in data) {
+                    if (key === 'timestamp') continue;
+                    
+                    const value = data[key];
+                    const card = document.getElementById(`${key}-card`);
+                    const valueElement = document.getElementById(`${key}-value`);
+                    const statusElement = document.getElementById(`${key}-status`);
+                    const iconElement = document.getElementById(`${key}-icon`);
+                    const messageElement = document.getElementById(`${key}-message`);
+                    
+                    if (!card || !valueElement || !statusElement || !iconElement) {
+                        console.warn(`Missing elements for sensor: ${key}`);
+                        continue;
+                    }
+                    
+                    if (value !== null && value !== undefined) {
+                        const { status, icon, message } = updateStatus(value, key);
+                        const formattedValue = formatValue(value, key);
+                        
+                        // Only update if the value has changed
+                        if (valueElement.innerText !== formattedValue) {
+                            valueElement.innerText = formattedValue;
+                            card.className = `sensor-card ${status}`;
+                            iconElement.className = `fas ${icon}`;
+                            statusElement.innerText = status.charAt(0).toUpperCase() + status.slice(1);
+                            
+                            if (messageElement) {
+                                messageElement.innerText = message || '';
+                                messageElement.className = `card-message ${status}`;
+                            }
+
+                            // Show alert for warning and critical states
+                            if (status === 'critical') {
+                                hasCriticalState = true;
+                                showAlert(message, status);
+                            } else if (status === 'warning') {
+                                showAlert(message, status);
+                            }
+
+                            updateLastUpdateTime(key, data.timestamp);
+                            hasNewData = true;
+                        }
+                    } else {
+                        if (valueElement.innerText !== "N/A") {
+                            valueElement.innerText = "N/A";
+                            card.className = 'sensor-card offline';
+                            iconElement.className = 'fas fa-question-circle';
+                            statusElement.innerText = "Offline";
+                            if (messageElement) {
+                                messageElement.innerText = 'Sensor offline';
+                                messageElement.className = 'card-message offline';
+                            }
+                            updateLastUpdateTime(key, data.timestamp);
+                        }
+                    }
+                }
+
+                // If no critical states, clear all critical alerts
+                if (!hasCriticalState) {
+                    const alertBox = document.getElementById('alert-box');
+                    if (alertBox) {
+                        const criticalAlerts = alertBox.querySelectorAll('.alert.critical');
+                        criticalAlerts.forEach(alert => alert.remove());
+                    }
+                }
+
+                // Reset retry count on successful fetch
+                if (hasNewData) {
+                    retryCount = 0;
+                }
+
+            } catch (error) {
+                console.error('Error fetching data:', error);
+                retryCount++;
+
+                if (retryCount >= MAX_RETRIES) {
+                    updateConnectionStatus(false, 'Connection lost');
+                    showAlert('Connection to server lost. Please check your network connection.', 'critical');
+                    retryCount = 0;
+                } else {
+                    updateConnectionStatus(false, `Retrying (${retryCount}/${MAX_RETRIES})...`);
+                }
+
+                setTimeout(fetchData, RETRY_DELAY);
+                return;
+            }
+
+            setTimeout(fetchData, UPDATE_INTERVAL);
+        }
+
+        // Initial fetch
+        window.onload = fetchData;
+    </script>
 </head>
 <body>
-  <h1>Lavender Environment Monitor</h1>
-  <div class="container">
-    <div class="section" id="temp">Loading...</div>
-    <div class="section" id="humidity">Loading...</div>
-    <div class="section" id="light_intensity">Loading...</div>
-  </div>
+    <div class="dashboard">
+        <header>
+            <h1><i class="fas fa-leaf"></i> Lavender Environment Monitor</h1>
+            <p class="subtitle">Real-time sensor data monitoring</p>
+        </header>
+        
+        <div id="connection-status" class="connection-status">
+            <i class="fas fa-wifi"></i> Connected
+        </div>
+        
+        <div class="container">
+            <div class="sensor-card" id="temp-card">
+                <div class="card-header">
+                    <i class="fas fa-temperature-high" id="temp-icon"></i>
+                    <h2>Temperature</h2>
+                </div>
+                <div class="card-value" id="temp-value">Loading...</div>
+                <div class="card-status" id="temp-status">Normal</div>
+                <div class="card-message" id="temp-message"></div>
+                <div class="card-range">
+                    <span>Ideal: 15-30°C</span>
+                    <span>Warning: 10-35°C</span>
+                    <span>Critical: <5°C or >40°C</span>
+                </div>
+            </div>
+
+            <div class="sensor-card" id="humidity-card">
+                <div class="card-header">
+                    <i class="fas fa-tint" id="humidity-icon"></i>
+                    <h2>Humidity</h2>
+                </div>
+                <div class="card-value" id="humidity-value">Loading...</div>
+                <div class="card-status" id="humidity-status">Normal</div>
+                <div class="card-message" id="humidity-message"></div>
+                <div class="card-range">
+                    <span>Ideal: 30-50%</span>
+                    <span>Warning: 20-70%</span>
+                    <span>Critical: <15% or >80%</span>
+                </div>
+            </div>
+
+            <div class="sensor-card" id="light_intensity-card">
+                <div class="card-header">
+                    <i class="fas fa-sun" id="light_intensity-icon"></i>
+                    <h2>Light Intensity</h2>
+                </div>
+                <div class="card-value" id="light_intensity-value">Loading...</div>
+                <div class="card-status" id="light_intensity-status">Normal</div>
+                <div class="card-message" id="light_intensity-message"></div>
+                <div class="card-range">
+                    <span>Ideal: 20-30k lux</span>
+                    <span>Warning: 10-40k lux</span>
+                    <span>Critical: <5k or >45k lux</span>
+                </div>
+            </div>
+        </div>
+    </div>
 </body>
 </html>
+

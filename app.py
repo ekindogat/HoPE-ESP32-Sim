@@ -6,7 +6,7 @@ start_mqtt()
 
 @app.route("/")
 def dashboard():
-    return render_template("dashboard.html")
+    return render_template("realtime_dashboard.html")
 
 @app.route("/data")
 def data():
@@ -14,3 +14,12 @@ def data():
 
 if __name__ == "__main__":
     app.run(debug=True)
+
+""" LAVENDER IDEAL CONDITION
+Temperature: 15–30°C (ideal), <10°C or >35°C (critical)
+
+Humidity: 30–50% (ideal), <20% or >70% (critical)
+
+Light Intensity: 20000–30000 lux (ideal), <10000 or >40000 lux (critical)
+
+"""

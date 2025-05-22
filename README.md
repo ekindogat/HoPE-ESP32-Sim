@@ -1,20 +1,95 @@
 # HoPE-MQTT-Project
-Home Planet Environmental Monitoring System Project, a basic wireless communication simulator project. 
+Home Planet Environmental Monitoring System Project - A real-time sensor monitoring dashboard using MQTT for wireless communication.
 
-## Requirements:
- - Python, PIP
- - Python libraries: paho-mqtt, flask
+## Overview
+This project implements a real-time monitoring system for environmental sensors (temperature, humidity, and light intensity) using MQTT protocol. It features a modern, responsive web dashboard that displays sensor data with status indicators and alerts.
 
-<br>
+### Features
+- Real-time sensor data monitoring
+- Status indicators for ideal, warning, and critical conditions
+- Responsive web dashboard with modern UI
+- Automatic alerts for critical and warning conditions
+- Connection status monitoring
+- Simulated sensor data generation for testing
+- MQTT-based wireless communication
 
-## Installation:
-- Instal [Python 3](https://www.python.org/downloads/)
-- Install python packages by this command
-> pip install flask paho-mqtt
+## Requirements
+### Software
+- Python 3.x
+- pip (Python package manager)
 
-### Start:
- - Start "app.py"
- - (TO BE EDITED) 
- - This will start the subscriptor reading messages sent by ESP32 by subscribing the MQTT channel.
- - Then:
-     - Go to http://localhost:{port}/ui (depending on the what port the server listens at, currently 1883) in a web browser on the same network.
+### Python Packages
+Install the required packages using pip:
+```bash
+pip install flask==3.0.2 paho-mqtt==1.6.1
+```
+
+## Installation
+
+1. Clone the repository:
+```bash
+git clone https://github.com/yourusername/HoPE-MQTT-Project.git
+cd HoPE-MQTT-Project
+```
+
+2. Install the required Python packages using the command above.
+
+## Project Structure
+```
+HoPE-MQTT-Project/
+├── app.py                 # Flask application and main entry point
+├── mqtt_client.py         # MQTT client implementation
+├── static/               # Static files
+│   ├── css/             # CSS stylesheets
+│   └── icon/            # Project icons
+├── templates/            # HTML templates
+└── requirements.txt      # Python dependencies
+```
+
+## Usage
+
+1. Start the application:
+```bash
+python app.py
+```
+
+2. Access the dashboard:
+   - Open a web browser
+   - Navigate to `http://localhost:5000`
+   - The dashboard will automatically connect to the MQTT broker and start displaying sensor data
+
+### Sensor Data Ranges
+The system monitors three environmental parameters with the following ranges:
+
+#### Temperature
+- Ideal: 15-30°C
+- Warning: 10-35°C
+- Critical: <5°C or >40°C
+
+#### Humidity
+- Ideal: 30-50%
+- Warning: 20-70%
+- Critical: <15% or >80%
+
+#### Light Intensity
+- Ideal: 20-30k lux
+- Warning: 10-40k lux
+- Critical: <5k or >45k lux
+
+## Development
+- The dashboard updates every 2 seconds
+- Sensor data includes timestamps to prevent alert spamming
+- The system automatically handles connection issues and reconnection
+- Critical alerts persist until resolved, while warning alerts clear with new data
+
+## Testing
+The project includes a simulated sensor data generator for testing purposes. It can generate:
+- Random values within defined ranges
+- Simulated sensor failures
+- Network delays and connection issues
+
+## License
+
+## Contributors
+1. Ekin Doğa Taşkın
+2. Mert Özdemir

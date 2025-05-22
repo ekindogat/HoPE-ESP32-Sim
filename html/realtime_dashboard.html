@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Lavender Plant Monitor</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <script>
+    function fetchData() {
+      fetch('/data')
+        .then(res => res.json())
+        .then(data => {
+          for (const key in data) {
+            const value = data[key];
+            const element = document.getElementById(key);
+            element.innerText = value ?? "N/A";
+            if (key === "temperature") {
+              element.style.backgroundColor = value >= 15 && value <= 30 ? "green" : "red";
+            } else if (key === "humidity") {
+              element.style.backgroundColor = value >= 30 && value <= 50 ? "green" : "red";
+            } else if (key === "light") {
+              element.style.backgroundColor = value >= 20000 && value <= 30000 ? "green" : "red";
+            }
+          }
+        });
+    }
+
+    setInterval(fetchData, 2000); // update every 2 seconds
+    window.onload = fetchData;
+  </script>
+</head>
+<body>
+  <h1>Lavender Environment Monitor</h1>
+  <div class="container">
+    <div class="section" id="temperature">Loading...</div>
+    <div class="section" id="humidity">Loading...</div>
+    <div class="section" id="light">Loading...</div>
+  </div>
+</body>
+</html>

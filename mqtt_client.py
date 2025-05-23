@@ -9,6 +9,7 @@ def on_connect(client, userdata, flags, rc):
     print("Connected with result code " + str(rc))
     if rc == 0:
         print("Successfully connected to MQTT broker")
+
         client.subscribe("wokwi/sensors/data")
     else:
         print(f"Failed to connect, return code {rc}")
@@ -29,16 +30,16 @@ def on_message(client, userdata, msg):
     try:
         # payload format: {"temp": val, "humidity": val, "light_intensity": val, "timestamp": val}
         data = json.loads(msg.payload.decode())
-        # Update timestamp if not present
+        # update timestamp if not present
         if "timestamp" not in data:
             data["timestamp"] = time.strftime("%Y-%m-%d %H:%M:%S")
-        # Update sensor data
+        # update sensor data
         sensor_data.update(data)
         print(f"Received data: {data}")
     except Exception as e:
         print("Failed to parse message:", e)
 
-# Create MQTT client with automatic reconnect
+
 client = mqtt.Client()
 client.on_connect = on_connect
 client.on_disconnect = on_disconnect

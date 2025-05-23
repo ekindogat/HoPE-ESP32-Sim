@@ -21,18 +21,21 @@ This project implements a real-time monitoring system for environmental sensors 
 ### Python Packages
 Install the required packages using pip:
 ```bash
-pip install flask==3.0.2 paho-mqtt==1.6.1
+pip install flask paho-mqtt
 ```
 
 ## Installation
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/HoPE-MQTT-Project.git
+git clone https://github.com/ekindogat/HoPE-MQTT-Project
 cd HoPE-MQTT-Project
 ```
 
-2. Install the required Python packages using the command above.
+2. Install the required Python packages using this command:
+```bash
+pip install flask paho-mqtt
+```
 
 ## Project Structure
 ```
@@ -42,8 +45,8 @@ HoPE-MQTT-Project/
 ├── static/               # Static files
 │   ├── css/             # CSS stylesheets
 │   └── icon/            # Project icons
-├── templates/            # HTML templates
-└── requirements.txt      # Python dependencies
+├── HoPE Sensors.url       # Wokwi simulator
+└── templates/            # HTML templates
 ```
 
 ## Usage
@@ -63,18 +66,18 @@ The system monitors three environmental parameters with the following ranges:
 
 #### Temperature
 - Ideal: 15-30°C
-- Warning: 10-35°C
-- Critical: <5°C or >40°C
+- Warning: 5°C range for minimum and maximum ideal value
+- Critical: <10°C or >35°C
 
 #### Humidity
 - Ideal: 30-50%
-- Warning: 20-70%
-- Critical: <15% or >80%
+- Warning: 10% range for minimum and maximum ideal value
+- Critical: <20% or >60%
 
 #### Light Intensity
 - Ideal: 20-30k lux
-- Warning: 10-40k lux
-- Critical: <5k or >45k lux
+- Warning: 10k lux range for minimum and maximum ideal value
+- Critical: <10k or >40k lux
 
 ## Development
 - The dashboard updates every 2 seconds

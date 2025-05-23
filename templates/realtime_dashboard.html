@@ -1,57 +1,98 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>HoPE - Lavender Monitoring</title>
+    <title>HoPE - Lavender Monitoring</title>
     <link rel="stylesheet" href="/static/css/realtime_dashboard_style.css">
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-  <script>
+    <script>
         function updateStatus(value, type) {
             let status = 'normal';
             let icon = 'fa-check-circle';
             let message = '';
-            
+            threshold_dictionary = {
+                // Temperature
+                "TEMP_CRIT_HIGH": 35,
+                "TEMP_CRIT_LOW": 10,
+                "TEMP_THRESHOLD_VAL": 5,
+
+                // Humidity
+                "HUMIDITY_CRIT_HIGH": 60,
+                "HUMIDITY_CRIT_LOW": 20,
+                "HUMIDITY_THRESHOLD_VAL": 10,
+
+                // Light intensity
+                "LIGHT_CRIT_HIGH": 40000,
+                "LIGHT_CRIT_LOW": 10000,
+                "LIGHT_THRESHOLD_VAL": 10000
+            };
+            var high, low, threshold;
             if (type === 'temp') {
-                if (value < 5 || value > 40) {  // Critical range
+                low = threshold_dictionary["TEMP_CRIT_LOW"];
+                high = threshold_dictionary["TEMP_CRIT_HIGH"];
+                threshold = threshold_dictionary["TEMP_THRESHOLD_VAL"];
+
+                if (value < low
+                    ||
+                    value > high) {
+                    // Critical range
                     status = 'critical';
                     icon = 'fa-exclamation-triangle';
                     message = value < 5 ? 'Temperature too low!' : 'Temperature too high!';
-                } else if (value < 10 || value > 35) {  // Warning range
+                } else if (value < (low + threshold)
+                    ||
+                    value > (high - threshold)) {  // Warning range
                     status = 'warning';
                     icon = 'fa-exclamation-circle';
                     message = value < 10 ? 'Temperature getting low' : 'Temperature getting high';
                 }
             } else if (type === 'humidity') {
-                if (value < 15 || value > 80) {  // Critical range
+                low = threshold_dictionary["HUMIDITY_CRIT_LOW"];
+                high = threshold_dictionary["HUMIDITY_CRIT_HIGH"];
+                threshold = threshold_dictionary["HUMIDITY_THRESHOLD_VAL"];
+                if (value < low
+                    ||
+                    value > high) {  // Critical range
                     status = 'critical';
                     icon = 'fa-exclamation-triangle';
                     message = value < 15 ? 'Humidity too low!' : 'Humidity too high!';
-                } else if (value < 20 || value > 70) {  // Warning range
+                }
+                else if (value < (low + threshold)
+                    ||
+                    value > (high - threshold)) {  // Warning range
                     status = 'warning';
                     icon = 'fa-exclamation-circle';
                     message = value < 20 ? 'Humidity getting low' : 'Humidity getting high';
                 }
             } else if (type === 'light_intensity') {
-                if (value < 5000 || value > 45000) {  // Critical range
+                low = threshold_dictionary["LIGHT_CRIT_LOW"];
+                high = threshold_dictionary["LIGHT_CRIT_HIGH"];
+                threshold = threshold_dictionary["LIGHT_THRESHOLD_VAL"];
+                if (value < low
+                    ||
+                    value > high) {  // Critical range
                     status = 'critical';
                     icon = 'fa-exclamation-triangle';
                     message = value < 5000 ? 'Light intensity too low!' : 'Light intensity too high!';
-                } else if (value < 10000 || value > 40000) {  // Warning range
+                } else if (value < (low + threshold)
+                    ||
+                    value > (high - threshold)) {  // Warning range
                     status = 'warning';
                     icon = 'fa-exclamation-circle';
                     message = value < 10000 ? 'Light intensity getting low' : 'Light intensity getting high';
                 }
             }
-            
+
             return { status, icon, message };
         }
 
         function formatValue(value, type) {
             if (type === 'temp') return `${value}°C`;
             if (type === 'humidity') return `${value}%`;
-            if (type === 'light_intensity') return `${(value/1000).toFixed(1)}k lux`;
+            if (type === 'light_intensity') return `${(value / 1000).toFixed(1)}k lux`;
             return value;
         }
 
@@ -63,7 +104,7 @@
                 alertBox.id = 'alert-box';
                 document.body.appendChild(alertBox);
             }
-            
+
             // Create new alert
             const alert = document.createElement('div');
             alert.className = `alert ${type}`;
@@ -72,10 +113,10 @@
                 <span>${message}</span>
                 <button onclick="this.parentElement.remove()">×</button>
             `;
-            
+
             // Add to alert box
             alertBox.appendChild(alert);
-            
+
             // Remove alert after 5 seconds if it's a warning
             if (type === 'warning') {
                 setTimeout(() => alert.remove(), 5000);
@@ -141,14 +182,14 @@
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
                 const data = await response.json();
-                
+
                 // Check if this is a new message
                 if (data.timestamp === lastMessageTimestamp) {
                     // Same message, don't update UI
                     setTimeout(fetchData, UPDATE_INTERVAL);
                     return;
                 }
-                
+
                 lastMessageTimestamp = data.timestamp;
                 console.log('Received new data:', data);
 
@@ -159,30 +200,30 @@
                 let hasCriticalState = false;
                 for (const key in data) {
                     if (key === 'timestamp') continue;
-                    
+
                     const value = data[key];
                     const card = document.getElementById(`${key}-card`);
                     const valueElement = document.getElementById(`${key}-value`);
                     const statusElement = document.getElementById(`${key}-status`);
                     const iconElement = document.getElementById(`${key}-icon`);
                     const messageElement = document.getElementById(`${key}-message`);
-                    
+
                     if (!card || !valueElement || !statusElement || !iconElement) {
                         console.warn(`Missing elements for sensor: ${key}`);
                         continue;
                     }
-                    
+
                     if (value !== null && value !== undefined) {
                         const { status, icon, message } = updateStatus(value, key);
                         const formattedValue = formatValue(value, key);
-                        
+
                         // Only update if the value has changed
                         if (valueElement.innerText !== formattedValue) {
                             valueElement.innerText = formattedValue;
                             card.className = `sensor-card ${status}`;
                             iconElement.className = `fas ${icon}`;
                             statusElement.innerText = status.charAt(0).toUpperCase() + status.slice(1);
-                            
+
                             if (messageElement) {
                                 messageElement.innerText = message || '';
                                 messageElement.className = `card-message ${status}`;
@@ -248,21 +289,22 @@
         }
 
         // Initial fetch
-    window.onload = fetchData;
-  </script>
+        window.onload = fetchData;
+    </script>
 </head>
+
 <body>
     <div class="dashboard">
         <header>
             <h1><i class="fas fa-leaf"></i> Lavender Environment Monitor</h1>
             <p class="subtitle">Real-time sensor data monitoring</p>
         </header>
-        
+
         <div id="connection-status" class="connection-status">
             <i class="fas fa-wifi"></i> Connected
         </div>
-        
-  <div class="container">
+
+        <div class="container">
             <div class="sensor-card" id="temp-card">
                 <div class="card-header">
                     <i class="fas fa-temperature-high" id="temp-icon"></i>
@@ -274,7 +316,7 @@
                 <div class="card-range">
                     <span>Ideal: 15-30°C</span>
                     <span>Warning: 10-35°C</span>
-                    <span>Critical: <5°C or >40°C</span>
+                    <span>Critical: &lt;5°C or &gt;40°C</span>
                 </div>
             </div>
 
@@ -288,8 +330,8 @@
                 <div class="card-message" id="humidity-message"></div>
                 <div class="card-range">
                     <span>Ideal: 30-50%</span>
-                    <span>Warning: 20-70%</span>
-                    <span>Critical: <15% or >80%</span>
+                    <span>Warning: 20-60%</span>
+                    <span>Critical: &lt;20% or &gt;60%</span>
                 </div>
             </div>
 
@@ -304,11 +346,11 @@
                 <div class="card-range">
                     <span>Ideal: 20-30k lux</span>
                     <span>Warning: 10-40k lux</span>
-                    <span>Critical: <5k or >45k lux</span>
+                    <span>Critical: &lt;10k or &gt;40k lux</span>
                 </div>
             </div>
         </div>
-  </div>
+    </div>
 </body>
-</html>
 
+</html>

@@ -92,7 +92,3 @@ The project includes a simulated sensor data generator for testing purposes. It 
 - Network delays and connection issues
 
 ## License
-
-## Contributors
-1. Ekin Doğa Taşkın
-2. Mert Özdemir

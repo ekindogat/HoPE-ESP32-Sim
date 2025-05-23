@@ -15,8 +15,8 @@
             let message = '';
             threshold_dictionary = {
                 // Temperature
-                "TEMP_CRIT_HIGH": 35,
-                "TEMP_CRIT_LOW": 10,
+                "TEMP_CRIT_HIGH": 40,
+                "TEMP_CRIT_LOW": 5,
                 "TEMP_THRESHOLD_VAL": 5,
 
                 // Humidity
@@ -144,7 +144,7 @@
         let retryCount = 0;
         const MAX_RETRIES = 5;
         const RETRY_DELAY = 2000;
-        const UPDATE_INTERVAL = 2000;
+        const UPDATE_INTERVAL = 3000;
         let connectionLost = false;
 
         function updateLastUpdateTime(key, timestamp) {

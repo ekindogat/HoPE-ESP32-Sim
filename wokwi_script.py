@@ -47,14 +47,45 @@ def get_random_value(ranges):
     min_val, max_val = ranges[condition]
     return round(random.uniform(min_val, max_val), 1)
 
+def get_ideal_value(ranges):
+    """Get a random value from the ideal range."""
+    min_val, max_val = ranges['ideal_low']
+    return round(random.uniform(min_val, max_val), 1)
+
+def get_warning_value(ranges):
+    """Get a random value from either warning_low or warning_high range."""
+    warning_type = random.choice(['warning_low', 'warning_high'])
+    min_val, max_val = ranges[warning_type]
+    return round(random.uniform(min_val, max_val), 1)
+
 def generate_sensor_data():
-    """Generate random sensor data that tests all conditions."""
+    """Generate sensor data with ideal values for first 5 messages, then 3 warning messages."""
+    global message_counter
     timestamp = get_timestamp()
+    
+    if message_counter < 5:
+        # Generate ideal values for first 5 messages
+        temp = get_ideal_value(TEMP_RANGES)
+        humidity = get_ideal_value(HUMIDITY_RANGES)
+        light = int(get_ideal_value(LIGHT_RANGES))
+        message_counter += 1
+    elif message_counter < 8:
+        # Generate warning values for next 3 messages
+        temp = get_warning_value(TEMP_RANGES)
+        humidity = get_warning_value(HUMIDITY_RANGES)
+        light = int(get_warning_value(LIGHT_RANGES))
+        message_counter += 1
+    else:
+        # Generate random values for subsequent messages
+        temp = get_random_value(TEMP_RANGES)
+        humidity = get_random_value(HUMIDITY_RANGES)
+        light = int(get_random_value(LIGHT_RANGES))
+    
     return {
         "timestamp": timestamp,
-        "temp": get_random_value(TEMP_RANGES),
-        "humidity": get_random_value(HUMIDITY_RANGES),
-        "light_intensity": int(get_random_value(LIGHT_RANGES))
+        "temp": temp,
+        "humidity": humidity,
+        "light_intensity": light
     }
 
 # Wi-Fi connection
@@ -83,6 +114,7 @@ def get_timestamp():
 
 # Counter to occasionally simulate sensor failure
 sensor_failure_counter = 0
+message_counter = 0  # Add message counter
 
 while True:
     try:
@@ -91,7 +123,7 @@ while True:
         
         # Simulate occasional sensor failure (every ~30 readings)
         sensor_failure_counter += 1
-        if sensor_failure_counter >= 30:
+        if sensor_failure_counter >= 30 and message_counter >= 8:  # Only simulate failures after ideal and warning messages
             sensor_data = {
                 "timestamp": timestamp,
                 "temp": None,  # Simulate sensor failure
